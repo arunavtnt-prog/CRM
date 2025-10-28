@@ -1,0 +1,38 @@
+# Wavelaunch Studio OS - Python Dependencies
+# Core Framework
+Django==4.2.9
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+
+# Database & ORM
+psycopg2-binary==2.9.9
+django-extensions==3.2.3
+
+# Security & Authentication
+django-allauth==0.57.0
+djangorestframework-simplejwt==5.3.1
+PyJWT==2.8.0
+cryptography==41.0.7
+django-otp==1.3.0
+qrcode==7.4.2
+
+# Encryption for credentials
+django-encrypted-model-fields==0.6.5
+
+# Environment Management
+python-decouple==3.8
+python-dotenv==1.0.0
+
+# AI Integration
+anthropic==0.7.8
+openai==1.6.1
+
+# Utils
+Pillow==10.1.0
+python-dateutil==2.8.2
+
+# Development & Testing
+black==23.12.1
+flake8==7.0.0
+pytest==7.4.3
+pytest-django==4.7.0
