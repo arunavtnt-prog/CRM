@@ -21,7 +21,7 @@ qrcode==7.4.2
 django-encrypted-model-fields==0.6.5
 
 # Environment Management
-python-decouple==3.8
+# Using native os.environ instead of python-decouple
 python-dotenv==1.0.0
 
 # AI Integration
