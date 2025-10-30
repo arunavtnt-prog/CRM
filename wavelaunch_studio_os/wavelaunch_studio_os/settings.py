@@ -7,18 +7,25 @@ Epic 0: System Foundation & Access
 
 import os
 from pathlib import Path
-from decouple import config
+
+# Helper function to read environment variables
+def get_env(key, default='', cast=str):
+    """Get environment variable with default and type casting"""
+    value = os.environ.get(key, default)
+    if cast == bool:
+        return value.lower() in ('true', '1', 'yes') if isinstance(value, str) else bool(value)
+    return cast(value) if value else default
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-CHANGE-THIS-IN-PRODUCTION')
+SECRET_KEY = get_env('SECRET_KEY', default='django-insecure-CHANGE-THIS-IN-PRODUCTION')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = get_env('DEBUG', default='True', cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = get_env('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -81,11 +88,11 @@ WSGI_APPLICATION = 'wavelaunch_studio_os.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DATABASE_NAME', default='wavelaunch_studio_os'),
-        'USER': config('DATABASE_USER', default='postgres'),
-        'PASSWORD': config('DATABASE_PASSWORD', default=''),
-        'HOST': config('DATABASE_HOST', default='localhost'),
-        'PORT': config('DATABASE_PORT', default='5432'),
+        'NAME': get_env('DATABASE_NAME', default='wavelaunch_studio_os'),
+        'USER': get_env('DATABASE_USER', default='postgres'),
+        'PASSWORD': get_env('DATABASE_PASSWORD', default=''),
+        'HOST': get_env('DATABASE_HOST', default='localhost'),
+        'PORT': get_env('DATABASE_PORT', default='5432'),
     }
 }
 
@@ -133,7 +140,7 @@ REST_FRAMEWORK = {
 }
 
 # Field Encryption (Story 1.4 - Secure credential storage)
-FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY', default='')
+FIELD_ENCRYPTION_KEY = get_env('FIELD_ENCRYPTION_KEY', default='')
 
 # Security Settings (Epic 0.1)
 SECURE_BROWSER_XSS_FILTER = True
@@ -185,5 +192,5 @@ LOGGING = {
 }
 
 # AI API Configuration (Epic 3)
-ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
-OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+ANTHROPIC_API_KEY = get_env('ANTHROPIC_API_KEY', default='')
+OPENAI_API_KEY = get_env('OPENAI_API_KEY', default='')
