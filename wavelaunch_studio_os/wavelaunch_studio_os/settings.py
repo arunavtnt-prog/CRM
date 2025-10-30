@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'django_filters',
     'django_extensions',
     'django_otp',
     'django_otp.plugins.otp_totp',
