@@ -2,9 +2,11 @@
 
 import { signOut, useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/components/providers/theme-provider';
 
 export function Header() {
   const { data: session } = useSession();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -14,6 +16,15 @@ export function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="w-9 px-0"
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </Button>
           {session && (
             <>
               <div className="text-sm">
