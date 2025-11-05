@@ -1,48 +1,80 @@
-import { requireAuth } from '@/lib/auth/session';
-import { prisma } from '@/lib/prisma';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/toast';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
-async function getDashboardData() {
-  const [
-    totalCreators,
-    activeCreators,
-    totalCampaigns,
-    activeCampaigns,
-    totalDeals,
-    openDeals,
-    recentActivities,
-  ] = await Promise.all([
-    prisma.creator.count(),
-    prisma.creator.count({ where: { status: 'ACTIVE' } }),
-    prisma.campaign.count(),
-    prisma.campaign.count({ where: { status: 'ACTIVE' } }),
-    prisma.deal.count(),
-    prisma.deal.count({ where: { status: { in: ['PENDING', 'NEGOTIATING'] } } }),
-    prisma.activity.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { name: true, email: true } } },
-    }),
-  ]);
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
-  return {
-    stats: {
-      totalCreators,
-      activeCreators,
-      totalCampaigns,
-      activeCampaigns,
-      totalDeals,
-      openDeals,
-    },
-    recentActivities,
+export default function DashboardPage() {
+  const { showToast } = useToast();
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch('/api/analytics');
+      if (!response.ok) throw new Error('Failed to fetch analytics');
+      const data = await response.json();
+      setAnalytics(data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      showToast('Failed to load analytics', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
-}
 
-export default async function DashboardPage() {
-  await requireAuth();
-  const data = await getDashboardData();
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-muted-foreground">Loading analytics...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!analytics) {
+    return (
+      <AppLayout>
+        <div className="text-center py-12 text-muted-foreground">
+          Unable to load analytics data
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const { overview, topCreators, recentCampaigns, monthlyData, dealsByStatus } = analytics;
 
   return (
     <AppLayout>
@@ -55,89 +87,179 @@ export default async function DashboardPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Creators
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Total Creators</CardTitle>
               <span className="text-2xl">👥</span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.stats.totalCreators}</div>
+              <div className="text-2xl font-bold">{overview.totalCreators}</div>
               <p className="text-xs text-muted-foreground">
-                {data.stats.activeCreators} active
+                {overview.activeCreators} active
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Campaigns
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
               <span className="text-2xl">📢</span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.stats.activeCampaigns}</div>
+              <div className="text-2xl font-bold">{overview.activeCampaigns}</div>
               <p className="text-xs text-muted-foreground">
-                {data.stats.totalCampaigns} total campaigns
+                {overview.totalCampaigns} total
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Open Deals
-              </CardTitle>
-              <span className="text-2xl">💼</span>
+              <CardTitle className="text-sm font-medium">Closed Deals</CardTitle>
+              <span className="text-2xl">✅</span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.stats.openDeals}</div>
+              <div className="text-2xl font-bold">{overview.closedDeals}</div>
               <p className="text-xs text-muted-foreground">
-                {data.stats.totalDeals} total deals
+                {overview.totalDeals} total deals
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Deal Value</CardTitle>
+              <span className="text-2xl">💰</span>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(overview.totalDealValue)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(overview.closedDealValue)} closed
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {data.recentActivities.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No recent activity</p>
-            ) : (
+        {/* Charts Row */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Monthly Deals Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deals by Month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: number, name: string) =>
+                      name === 'value' ? formatCurrency(value) : value
+                    }
+                  />
+                  <Legend />
+                  <Bar dataKey="deals" fill="#8884d8" name="Number of Deals" />
+                  <Bar dataKey="value" fill="#82ca9d" name="Deal Value ($)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Deal Status Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deals by Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={dealsByStatus}
+                    dataKey="count"
+                    nameKey="status"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={(entry) => `${entry.status}: ${entry.count}`}
+                  >
+                    {dealsByStatus.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Creators and Recent Campaigns */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Top Creators */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Creators by Revenue</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-4">
-                {data.recentActivities.map((activity: any) => (
-                  <div key={activity.id} className="flex items-start gap-4">
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {activity.user.name || activity.user.email}{' '}
-                        <span className="text-muted-foreground font-normal">
-                          {activity.action}
-                        </span>{' '}
-                        {activity.entity}
-                      </p>
-                      {activity.details && (
-                        <p className="text-sm text-muted-foreground">
-                          {activity.details}
+                {topCreators.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No creator data yet</p>
+                ) : (
+                  topCreators.map((creator: any, index: number) => (
+                    <div key={creator.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">
+                          #{index + 1} {creator.name}
                         </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(activity.createdAt).toLocaleString()}
-                      </p>
+                        <p className="text-sm text-muted-foreground">
+                          {creator.dealCount} {creator.dealCount === 1 ? 'deal' : 'deals'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{formatCurrency(creator.totalValue)}</p>
+                      </div>
                     </div>
-                    <Badge variant="outline">{activity.entity}</Badge>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Recent Campaigns */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Campaigns</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentCampaigns.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No campaigns yet</p>
+                ) : (
+                  recentCampaigns.map((campaign: any) => (
+                    <div key={campaign.id} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{campaign.title}</p>
+                        <p className="text-sm text-muted-foreground">{campaign.brand}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={campaign.status === 'ACTIVE' ? 'success' : 'secondary'}>
+                          {campaign.status}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {campaign._count.deals} deals
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );

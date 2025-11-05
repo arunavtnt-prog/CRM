@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { DealFormModal } from '@/components/deals/deal-form-modal';
 import { useToast } from '@/components/ui/toast';
+import { convertToCSV, downloadCSV, formatDateForCSV, formatCurrencyForCSV, CSVColumn } from '@/lib/utils/csv';
 
 export default function DealsPage() {
   const { showToast } = useToast();
@@ -62,6 +63,24 @@ export default function DealsPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    const columns: CSVColumn[] = [
+      { key: 'creator.name', header: 'Creator Name' },
+      { key: 'creator.email', header: 'Creator Email' },
+      { key: 'campaign.title', header: 'Campaign Title' },
+      { key: 'campaign.brand', header: 'Brand' },
+      { key: 'value', header: 'Deal Value', formatter: formatCurrencyForCSV },
+      { key: 'status', header: 'Status' },
+      { key: 'signedAt', header: 'Signed Date', formatter: formatDateForCSV },
+      { key: 'createdAt', header: 'Created Date', formatter: formatDateForCSV },
+      { key: 'notes', header: 'Notes' },
+    ];
+
+    const csvContent = convertToCSV(deals, columns);
+    const filename = `deals-export-${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(csvContent, filename);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       PENDING: 'outline',
@@ -97,14 +116,23 @@ export default function DealsPage() {
               Manage deals and agreements between campaigns and creators
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingDeal(null);
-              setModalOpen(true);
-            }}
-          >
-            + Create Deal
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={deals.length === 0}
+            >
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingDeal(null);
+                setModalOpen(true);
+              }}
+            >
+              + Create Deal
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

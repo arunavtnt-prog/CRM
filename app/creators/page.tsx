@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { CreatorFormModal } from '@/components/creators/creator-form-modal';
+import { convertToCSV, downloadCSV, formatDateForCSV, CSVColumn } from '@/lib/utils/csv';
 
 export default function CreatorsPage() {
   const [creators, setCreators] = useState<any[]>([]);
@@ -55,6 +56,24 @@ export default function CreatorsPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    const columns: CSVColumn[] = [
+      { key: 'name', header: 'Name' },
+      { key: 'email', header: 'Email' },
+      { key: 'instagramHandle', header: 'Instagram' },
+      { key: 'tiktokHandle', header: 'TikTok' },
+      { key: 'youtubeHandle', header: 'YouTube' },
+      { key: 'status', header: 'Status' },
+      { key: 'deals', header: 'Deals Count', formatter: (deals) => deals?.length || '0' },
+      { key: 'owner.email', header: 'Owner Email' },
+      { key: 'createdAt', header: 'Created Date', formatter: formatDateForCSV },
+    ];
+
+    const csvContent = convertToCSV(creators, columns);
+    const filename = `creators-export-${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(csvContent, filename);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       ACTIVE: 'success',
@@ -75,14 +94,23 @@ export default function CreatorsPage() {
               Manage your creators and influencers
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingCreator(null);
-              setModalOpen(true);
-            }}
-          >
-            + Create Creator
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={creators.length === 0}
+            >
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingCreator(null);
+                setModalOpen(true);
+              }}
+            >
+              + Create Creator
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}

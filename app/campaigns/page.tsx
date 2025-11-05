@@ -16,6 +16,7 @@ import {
 import { CampaignFormModal } from '@/components/campaigns/campaign-form-modal';
 import { useToast } from '@/components/ui/toast';
 import Link from 'next/link';
+import { convertToCSV, downloadCSV, formatDateForCSV, formatCurrencyForCSV, CSVColumn } from '@/lib/utils/csv';
 
 export default function CampaignsPage() {
   const { showToast } = useToast();
@@ -66,6 +67,23 @@ export default function CampaignsPage() {
     }
   };
 
+  const handleExportCSV = () => {
+    const columns: CSVColumn[] = [
+      { key: 'title', header: 'Campaign Title' },
+      { key: 'brand', header: 'Brand' },
+      { key: 'description', header: 'Description' },
+      { key: 'startDate', header: 'Start Date', formatter: formatDateForCSV },
+      { key: 'endDate', header: 'End Date', formatter: formatDateForCSV },
+      { key: 'budget', header: 'Budget', formatter: formatCurrencyForCSV },
+      { key: 'status', header: 'Status' },
+      { key: '_count.deals', header: 'Deals Count', formatter: (count) => count || '0' },
+    ];
+
+    const csvContent = convertToCSV(campaigns, columns);
+    const filename = `campaigns-export-${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(csvContent, filename);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
       PLANNING: 'outline',
@@ -100,14 +118,23 @@ export default function CampaignsPage() {
               Manage your marketing campaigns and brand partnerships
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingCampaign(null);
-              setModalOpen(true);
-            }}
-          >
-            + Create Campaign
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              disabled={campaigns.length === 0}
+            >
+              Export CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingCampaign(null);
+                setModalOpen(true);
+              }}
+            >
+              + Create Campaign
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
